@@ -34,6 +34,39 @@ export function blendedReturns(weights: Record<AssetKey, number>): [number, numb
   return out;
 }
 
+// ---- SBLOC (securities-based line of credit) -------------------------------
+// Illustrative borrow cost: ~SOFR + ~2.75% spread (mid-2026 ≈ 7%).
+export const SBLOC_DEFAULT_RATE = 7;
+export const SBLOC_MAX_LTV = 70;
+
+// Constant-leverage equity return. If a fraction m of total assets is financed
+// by debt at interest i, equity grows by g = [(1+r) − m(1+i)] / (1 − m).
+// Returns the leveraged annual % for each [cons, exp, opt] asset return.
+export function leveragedReturns(
+  base: [number, number, number],
+  ltvPct: number,
+  ratePct: number,
+): [number, number, number] {
+  const m = Math.min(0.9, Math.max(0, ltvPct / 100));
+  const i = ratePct / 100;
+  return base.map((rp) => {
+    const r = rp / 100;
+    const g = ((1 + r) - m * (1 + i)) / (1 - m);
+    return (g - 1) * 100;
+  }) as [number, number, number];
+}
+
+// Blend stable (base) and aggressive (leveraged) returns by SBLOC split s (0..1).
+export function blendSblocReturns(
+  base: [number, number, number],
+  ltvPct: number,
+  ratePct: number,
+  split: number, // 0 = all base/insurance, 1 = all SBLOC leverage
+): [number, number, number] {
+  const lev = leveragedReturns(base, ltvPct, ratePct);
+  return base.map((b, i) => b + split * (lev[i] - b)) as [number, number, number];
+}
+
 export interface SavingsPlan {
   active: boolean;
   goal: number;
@@ -60,8 +93,9 @@ export function project(
   years = 30,
   savingsMonthly = 0,
   savingsMonths = 0,
+  returnOverride?: [number, number, number],
 ): YearPoint[] {
-  const [rc, re, ro] = blendedReturns(weights).map((r) => r / 100);
+  const [rc, re, ro] = (returnOverride ?? blendedReturns(weights)).map((r) => r / 100);
   const [ic, ie, io] = INSURANCE_GROWTH.map((r) => r / 100);
 
   const points: YearPoint[] = [];

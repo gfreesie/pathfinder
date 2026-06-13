@@ -22,6 +22,9 @@ export function buildSummary(
   monthlyInvest: number,
   premium: number,
   insuranceOn: boolean,
+  sblocSplit = 0,
+  sblocLtv = 70,
+  sblocBorrow = 0,
 ): string {
   const l = (field: keyof typeof LABELS, v: string | null) => (v ? LABELS[field][v] : '—');
   const [rc, re, ro] = blendedReturns(allocationWeights(allocation));
@@ -43,7 +46,10 @@ export function buildSummary(
     `Crypto comfort: ${l('cryptoComfort', answers.cryptoComfort)}`,
     `Tangibility preference: ${l('tangibility', answers.tangibility)}`,
     `Life insurance interest: ${l('insurance', answers.insurance)}`,
-    insuranceOn ? `Insurance premium: ${fmtMoney(premium)}/mo (from monthly contribution)` : 'Insurance premium: n/a',
+    insuranceOn && sblocSplit < 100 ? `Insurance premium: ${fmtMoney(premium)}/mo (from monthly contribution)` : 'Insurance premium: n/a',
+    insuranceOn && sblocSplit > 0
+      ? `SBLOC: ${sblocSplit}% of the protection lever, ${sblocLtv}% advance rate${sblocBorrow ? ` (~${fmtMoney(sblocBorrow)} borrowable by yr 30)` : ''} — variable-rate leverage, margin-call risk`
+      : 'SBLOC: n/a',
     (() => {
       const sp = savingsPlan(answers);
       return sp.active

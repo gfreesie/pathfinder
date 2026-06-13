@@ -465,6 +465,18 @@ input[type='range']::-moz-range-thumb {
 }
 .insurance-card p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.55; color: #a05a70; }
 .insurance-card svg { flex-shrink: 0; margin-top: 2px; }
+.insurance-card.sbloc {
+  background: rgba(217, 164, 65, 0.12);
+  border-color: rgba(217, 164, 65, 0.4);
+  color: #8a6516;
+}
+.insurance-card.sbloc p { color: #9a7530; }
+[data-theme='dark'] .insurance-card.sbloc {
+  background: rgba(217, 164, 65, 0.1);
+  border-color: var(--border);
+  color: var(--gold);
+}
+[data-theme='dark'] .insurance-card.sbloc p { color: #c9a24e; }
 
 .dca-note {
   margin-top: 18px;
@@ -534,6 +546,37 @@ input[type='range']::-moz-range-thumb {
   padding: 10px 16px;
   margin-top: 10px;
 }
+.borrow-callout.sbloc {
+  color: #8a6516;
+  background: rgba(217, 164, 65, 0.14);
+}
+[data-theme='dark'] .borrow-callout.sbloc { color: var(--gold); background: rgba(217, 164, 65, 0.1); }
+.stat-row.sbloc { color: var(--gold); font-weight: 600; border-top: 1px dashed var(--border); margin-top: 4px; padding-top: 6px; }
+
+.dial.lever-toggle {
+  display: inline-flex;
+  gap: 0;
+  flex: 1 1 260px;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  height: fit-content;
+  align-self: center;
+}
+.dial.lever-toggle button {
+  flex: 1;
+  border: none;
+  background: var(--card);
+  color: var(--muted);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.dial.lever-toggle button.active { background: var(--accent); color: #fff; }
+[data-theme='dark'] .dial.lever-toggle button.active { color: #0e1626; }
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

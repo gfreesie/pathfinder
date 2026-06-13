@@ -45,7 +45,7 @@ export type Question =
   | {
       kind: 'slider';
       id: string;
-      field: 'capital' | 'monthly' | 'sleep' | 'premium';
+      field: 'capital' | 'monthly' | 'sleep' | 'premium' | 'sblocSplit' | 'sblocLtv';
       title: string;
       subtitle?: string;
       min: number;
@@ -53,6 +53,7 @@ export type Question =
       step: number;
       chips?: number[];
       money?: boolean;
+      percent?: boolean;
       endLabels?: [string, string];
     }
   | {
@@ -201,7 +202,7 @@ const ALL_QUESTIONS: Question[] = [
     field: 'insurance',
     title: 'Protection that doubles as opportunity',
     subtitle:
-      'Permanent life insurance builds cash value you can later borrow against (typically after a 2–5 year seasoning period) while protecting your family. Interested?',
+      'Permanent life insurance builds cash value you can borrow against while protecting your family. You can also blend in a securities-based line of credit (SBLOC) for more aggressive borrowing power — we’ll let you dial the mix next. Interested in this lever?',
     options: [
       { value: 'core', label: 'Yes — core piece', desc: 'Build it into the plan', icon: <HeartHandshake /> },
       { value: 'slice', label: 'Yes — small slice', desc: 'A modest premium', icon: <Heart /> },
@@ -221,6 +222,32 @@ const ALL_QUESTIONS: Question[] = [
     money: true,
   },
   {
+    kind: 'slider',
+    id: 'sblocSplit',
+    field: 'sblocSplit',
+    title: 'Stable insurance vs aggressive SBLOC',
+    subtitle:
+      'Split this lever between the two. Cash-value life insurance is the steady, protected side; a securities-based line of credit (SBLOC) borrows against your portfolio for more aggressive, leveraged growth (and more risk — variable ~6–8% rates, margin-call exposure). 0% is all insurance, 100% is all SBLOC.',
+    min: 0,
+    max: 100,
+    step: 5,
+    percent: true,
+    endLabels: ['All life insurance', 'All SBLOC'],
+  },
+  {
+    kind: 'slider',
+    id: 'sblocLtv',
+    field: 'sblocLtv',
+    title: 'SBLOC advance rate',
+    subtitle:
+      'The share of portfolio value you could borrow against. Higher means more access and more leverage, but less cushion before a margin call. 70% is the aggressive end for diversified equities.',
+    min: 10,
+    max: 70,
+    step: 5,
+    percent: true,
+    endLabels: ['Conservative', 'Aggressive'],
+  },
+  {
     kind: 'single',
     id: 'goal',
     field: 'goal',
@@ -237,7 +264,10 @@ const ALL_QUESTIONS: Question[] = [
 
 export function visibleQuestions(a: Answers): Question[] {
   return ALL_QUESTIONS.filter((q) => {
-    if (q.id === 'premium') return a.insurance === 'core' || a.insurance === 'slice';
+    const leverOn = a.insurance === 'core' || a.insurance === 'slice';
+    if (q.id === 'premium') return leverOn && a.sblocSplit < 100;
+    if (q.id === 'sblocSplit') return leverOn;
+    if (q.id === 'sblocLtv') return leverOn && a.sblocSplit > 0;
     return true;
   });
 }

@@ -36,6 +36,8 @@ export interface Answers {
   tangibility: TangibilityId | null;
   insurance: InsuranceId | null;
   premium: number;
+  sblocSplit: number;        // 0 = all stable life insurance, 100 = all aggressive SBLOC
+  sblocLtv: number;          // SBLOC advance rate the user would borrow against (% of portfolio)
   goal: GoalId | null;
   savingsGoal: number;   // emergency-fund target in dollars (0 = none set)
   savingsMonths: number; // months to reach it
@@ -54,6 +56,8 @@ export const initialAnswers: Answers = {
   tangibility: null,
   insurance: null,
   premium: 150,
+  sblocSplit: 40,
+  sblocLtv: 70,
   goal: null,
   savingsGoal: 0,
   savingsMonths: 12,

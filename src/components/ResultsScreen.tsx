@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Award,
+  Banknote,
   ChevronDown,
   PiggyBank,
   RotateCcw,
@@ -208,7 +209,7 @@ export default function ResultsScreen({
           </div>
         )}
 
-        {insuranceOn && (
+        {insuranceOn && answers.sblocSplit < 100 && (
           <div className="insurance-card">
             <ShieldCheck size={22} />
             <div>
@@ -217,6 +218,23 @@ export default function ResultsScreen({
                 Cash value becomes borrowable after a typical 2–5 year seasoning period — a future
                 source of opportunity capital. Funded from your monthly contribution, so your{' '}
                 {fmtMoney(answers.capital)} stays fully invested.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {insuranceOn && answers.sblocSplit > 0 && (
+          <div className="insurance-card sbloc">
+            <Banknote size={22} />
+            <div>
+              <strong>
+                Securities-based line of credit — {answers.sblocSplit}% of your lever, {answers.sblocLtv}% advance rate
+              </strong>
+              <p>
+                Borrow against your portfolio without selling — no premium drag, and your borrowing
+                power grows right along with the balance. The aggressive side of the mix: variable
+                rates (recently ~6–8%) and a sharp drop can trigger a margin call. Tune it on the
+                projection screen.
               </p>
             </div>
           </div>

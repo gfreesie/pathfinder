@@ -14,6 +14,9 @@ interface Props {
   monthly: number;
   premium: number;
   insuranceOn: boolean;
+  sblocSplit?: number;   // 0-100 share of the lever directed to SBLOC
+  sblocLtv?: number;     // advance rate %
+  sblocBorrow?: number;  // borrowing power at the long horizon
   onClose: () => void;
 }
 
@@ -58,7 +61,7 @@ const PALETTES = {
 function draw(
   cv: HTMLCanvasElement,
   theme: CardTheme,
-  { answers, profile, allocation, points, monthly, premium, insuranceOn }: Omit<Props, 'onClose'>,
+  { answers, profile, allocation, points, monthly, premium, insuranceOn, sblocSplit, sblocLtv, sblocBorrow }: Omit<Props, 'onClose'>,
 ) {
   const ctx = cv.getContext('2d')!;
   const P = PALETTES[theme];
@@ -176,10 +179,18 @@ function draw(
       'Safety net: ' + fmtMoney(savings.perMonth) + '/mo → ' + fmtMoney(savings.goal) + ' by month ' + savings.months,
     ]);
   }
-  if (insuranceOn) {
+  const split = sblocSplit ?? 0;
+  if (insuranceOn && split < 100) {
     boxLines.push([
       P.insurance,
       'Life insurance: ' + fmtMoney(premium) + '/mo — cash value borrowable after ~yr 3',
+    ]);
+  }
+  if (insuranceOn && split > 0) {
+    boxLines.push([
+      P.projection,
+      'SBLOC: ' + split + '% of the lever at ' + (sblocLtv ?? 70) + '% advance' +
+        (sblocBorrow ? ' — ~' + fmtMoney(sblocBorrow) + ' borrowable by yr 30' : ''),
     ]);
   }
   const boxH = 40 + boxLines.length * 40;
@@ -291,6 +302,9 @@ export default function SummaryModal(props: Props) {
       investMonthly,
       props.premium,
       props.insuranceOn,
+      props.sblocSplit ?? 0,
+      props.sblocLtv ?? 70,
+      props.sblocBorrow ?? 0,
     );
     try {
       await navigator.clipboard.writeText(text);

@@ -77,6 +77,7 @@ export default function QuestionScreen({ question, answers, onChange, onNext, on
         <motion.div className="slider-block" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
           <div className="slider-value">
             {q.money ? fmtMoney(answers[q.field]) : `${answers[q.field]}`}
+            {q.percent ? <span className="per-month">%</span> : null}
             {q.field === 'monthly' || q.field === 'premium' ? <span className="per-month"> / month</span> : null}
           </div>
           <input

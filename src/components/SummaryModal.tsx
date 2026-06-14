@@ -128,11 +128,38 @@ const PALETTES = {
   },
 } as const;
 
+// Draw an image cover-fitting a box (like CSS background-size: cover).
+function drawCover(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number,
+  focusY = 0.5,
+) {
+  const ir = img.width / img.height;
+  const br = dw / dh;
+  let sw = img.width;
+  let sh = img.height;
+  let sx = 0;
+  let sy = 0;
+  if (ir > br) {
+    sw = img.height * br;
+    sx = (img.width - sw) / 2;
+  } else {
+    sh = img.width / br;
+    sy = (img.height - sh) * focusY;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+}
+
 function draw(
   cv: HTMLCanvasElement,
   theme: CardTheme,
   { answers, profile, allocation, points, monthly, premium, insuranceOn, sblocSplit, sblocLtv, sblocBorrow, holdings }: Omit<Props, 'onClose'>,
   clientName: string,
+  horse: HTMLImageElement | null,
 ) {
   const ctx = cv.getContext('2d')!;
   const P = PALETTES[theme];
@@ -166,12 +193,22 @@ function draw(
     ctx.stroke();
   }
 
-  // header band
-  const grad = ctx.createLinearGradient(0, 0, W, 180);
-  grad.addColorStop(0, P.headerFrom);
-  grad.addColorStop(1, P.headerTo);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, 180);
+  // header band — celestial nebula in dark mode, calm gradient in light
+  if (theme === 'dark' && horse) {
+    drawCover(ctx, horse, 0, 0, W, 200, 0.32);
+    const ov = ctx.createLinearGradient(0, 0, 0, 200);
+    ov.addColorStop(0, 'rgba(7,11,22,0.10)');
+    ov.addColorStop(0.6, 'rgba(7,11,22,0.45)');
+    ov.addColorStop(1, 'rgba(10,16,31,0.92)');
+    ctx.fillStyle = ov;
+    ctx.fillRect(0, 0, W, 200);
+  } else {
+    const grad = ctx.createLinearGradient(0, 0, W, 180);
+    grad.addColorStop(0, P.headerFrom);
+    grad.addColorStop(1, P.headerTo);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, 180);
+  }
   if (theme === 'dark') {
     ctx.strokeStyle = 'rgba(217,164,65,0.5)';
     ctx.lineWidth = 1.5;
@@ -183,11 +220,11 @@ function draw(
   ctx.fillStyle = P.headerText;
   ctx.font = '800 52px Segoe UI, system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Pathfinder', W / 2, 82);
+  ctx.fillText('Nelli', W / 2, 82);
   ctx.font = '500 24px Segoe UI, system-ui, sans-serif';
   ctx.fillStyle = P.headerSub;
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  ctx.fillText('Investment Discovery · ' + date, W / 2, 128);
+  ctx.fillText('Financial Vision Casting · ' + date, W / 2, 128);
   const name = clientName.trim();
   if (name) {
     ctx.font = '600 22px Segoe UI, system-ui, sans-serif';
@@ -386,10 +423,22 @@ export default function SummaryModal(props: Props) {
 
   const cardH = computeHeight(props);
 
+  // Preload the celestial nebula so the dark card can come alive.
+  const horseRef = useRef<HTMLImageElement | null>(null);
+  const [horseReady, setHorseReady] = useState(false);
   useEffect(() => {
-    if (ref.current) draw(ref.current, cardTheme, props, clientName);
+    const img = new Image();
+    img.onload = () => {
+      horseRef.current = img;
+      setHorseReady(true);
+    };
+    img.src = '/celestial-horse.jpg';
+  }, []);
+
+  useEffect(() => {
+    if (ref.current) draw(ref.current, cardTheme, props, clientName, horseRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.allocation, props.monthly, props.premium, props.holdings, cardTheme, clientName, cardH]);
+  }, [props.allocation, props.monthly, props.premium, props.holdings, cardTheme, clientName, cardH, horseReady]);
 
   const fileSlug = () =>
     clientName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') ||
@@ -397,7 +446,7 @@ export default function SummaryModal(props: Props) {
 
   const savePng = () => {
     const a = document.createElement('a');
-    a.download = `pathfinder-${fileSlug()}.png`;
+    a.download = `nelli-${fileSlug()}.png`;
     a.href = ref.current!.toDataURL('image/png');
     a.click();
   };
@@ -410,7 +459,7 @@ export default function SummaryModal(props: Props) {
     if (!canvas) return;
     canvas.toBlob(async (blob) => {
       if (!blob) return;
-      const file = new File([blob], `pathfinder-${fileSlug()}.png`, { type: 'image/png' });
+      const file = new File([blob], `nelli-${fileSlug()}.png`, { type: 'image/png' });
       try {
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
@@ -486,7 +535,7 @@ export default function SummaryModal(props: Props) {
             Light card
           </button>
           <button className={`chip ${cardTheme === 'dark' ? 'active' : ''}`} onClick={() => setCardTheme('dark')}>
-            Telos dark
+            Celestial dark
           </button>
         </div>
         <canvas ref={ref} width={W} height={cardH} className="summary-canvas" />

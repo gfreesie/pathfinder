@@ -137,7 +137,7 @@ export function rollUp(holdings: CustomHolding[], capital: number): RollUp {
 
 // ---- persistence ------------------------------------------------------------
 
-const STORE = 'pathfinder-custom-portfolio';
+const STORE = 'nelli-custom-portfolio';
 
 export function saveHoldings(holdings: CustomHolding[]): void {
   try {

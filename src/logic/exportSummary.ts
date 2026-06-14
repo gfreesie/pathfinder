@@ -36,7 +36,7 @@ export function buildSummary(
   const KEY_ORDER: AssetKey[] = ['usStocks', 'intlStocks', 'metals', 'crypto', 'landReit', 'bonds', 'cash'];
 
   const lines: string[] = [
-    '=== PATHFINDER — INVESTMENT DISCOVERY SUMMARY ===',
+    '=== NELLI — FINANCIAL VISION CASTING ===',
     clientName ? `Prepared for: ${clientName}` : '',
     `Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`,
     '',

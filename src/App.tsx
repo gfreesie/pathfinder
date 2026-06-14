@@ -16,7 +16,7 @@ import type { CustomHolding } from './logic/customPortfolio';
 
 type Phase = 'intro' | 'quiz' | 'results' | 'projection';
 
-const STATE_KEY = 'pathfinder-progress-v1';
+const STATE_KEY = 'nelli-progress-v1';
 
 interface SavedState {
   phase: Phase;
@@ -53,7 +53,7 @@ export default function App() {
   );
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
-      return (localStorage.getItem('pathfinder-theme') as 'light' | 'dark') ?? 'light';
+      return (localStorage.getItem('nelli-theme') as 'light' | 'dark') ?? 'light';
     } catch {
       return 'light';
     }
@@ -62,7 +62,7 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     try {
-      localStorage.setItem('pathfinder-theme', theme);
+      localStorage.setItem('nelli-theme', theme);
     } catch {
       /* storage unavailable */
     }
@@ -149,7 +149,8 @@ export default function App() {
       {theme === 'dark' && <StarfieldBackground />}
       <header className="app-header">
         <span className="brand">
-          Pathfinder <em>· Investment Discovery</em>
+          <img className="brand-mark" src="/celestial-horse.jpg" alt="" aria-hidden="true" />
+          Nelli <em>· Financial Vision Casting</em>
         </span>
         {phase === 'quiz' && <ProgressPath current={qIndex} total={questions.length} />}
         <div className="header-actions">

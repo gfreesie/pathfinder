@@ -25,8 +25,8 @@ export interface PriceResult<T> {
   error?: string;
 }
 
-const CACHE_PREFIX = 'pathfinder-price-';
-const KEY_STORE = 'pathfinder-fmp-key';
+const CACHE_PREFIX = 'nelli-price-';
+const KEY_STORE = 'nelli-fmp-key';
 
 // ---- API key (Financial Modeling Prep) -------------------------------------
 

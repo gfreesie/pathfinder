@@ -45,6 +45,9 @@ html, body {
   flex-wrap: wrap;
 }
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 0.2px;
@@ -55,6 +58,20 @@ html, body {
   font-weight: 500;
   color: var(--muted);
   font-size: 14px;
+}
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 64% 26%;
+  border: 1px solid var(--border);
+  filter: saturate(0.85) brightness(1.03);
+}
+[data-theme='dark'] .brand-mark {
+  border-color: rgba(217, 164, 65, 0.5);
+  filter: saturate(1.2) contrast(1.08) brightness(1.1);
+  box-shadow: 0 0 16px rgba(120, 150, 220, 0.5), 0 0 8px rgba(217, 164, 65, 0.4);
 }
 
 /* Progress path */
@@ -128,19 +145,34 @@ html, body {
   flex-direction: column;
   align-items: center;
 }
-.intro-badge {
-  width: 96px;
-  height: 96px;
-  border-radius: 30px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: linear-gradient(135deg, var(--accent), #1f6b5b);
-  box-shadow: var(--shadow);
+.nelli-hero {
+  width: min(440px, 86vw);
+  border-radius: 18px;
+  overflow: hidden;
+  line-height: 0;
+  border: 1px solid var(--border);
+}
+.nelli-hero img { width: 100%; height: auto; display: block; }
+[data-theme='light'] .nelli-hero {
+  box-shadow: 0 14px 36px rgba(34, 48, 58, 0.14);
+  filter: saturate(0.85) brightness(1.03);
+}
+[data-theme='dark'] .nelli-hero {
+  border-color: rgba(217, 164, 65, 0.4);
+  filter: saturate(1.15) contrast(1.08) brightness(1.08);
+  box-shadow: 0 0 70px rgba(120, 150, 220, 0.35), 0 0 34px rgba(217, 164, 65, 0.25);
+  animation: nelliGlow 6s ease-in-out infinite;
+}
+@keyframes nelliGlow {
+  0%, 100% { box-shadow: 0 0 55px rgba(120, 150, 220, 0.28), 0 0 26px rgba(217, 164, 65, 0.2); }
+  50% { box-shadow: 0 0 90px rgba(120, 150, 220, 0.5), 0 0 44px rgba(217, 164, 65, 0.35); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-theme='dark'] .nelli-hero { animation: none; }
 }
 .intro-screen h1 {
   font-size: 52px;
-  margin: 26px 0 0;
+  margin: 22px 0 0;
   letter-spacing: -1px;
 }
 .intro-sub {
@@ -428,9 +460,13 @@ input[type='range']::-moz-range-thumb {
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 1;
 }
 .donut-center span { font-size: 22px; font-weight: 800; color: var(--ink); }
 .donut-center small { color: var(--muted); }
+/* Keep the hover tooltip above the centered "invested" label so data stays readable */
+.donut-wrap .recharts-tooltip-wrapper { z-index: 20 !important; }
+.ring-tip { position: relative; z-index: 20; }
 .allocation-list {
   flex: 1 1 320px;
   list-style: none;

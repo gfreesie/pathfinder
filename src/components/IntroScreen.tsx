@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import Wordmark from './Wordmark';
 
 interface Props {
   onStart: () => void;
@@ -16,7 +17,7 @@ export default function IntroScreen({ onStart }: Props) {
         <img src="/celestial-horse.jpg" alt="Nelli — a celestial horse cast in the stars" />
       </motion.div>
       <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        Nelli
+        <Wordmark />
       </motion.h1>
       <motion.p
         className="intro-sub"

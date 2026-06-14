@@ -7,6 +7,9 @@
   --accent: #2f6fb0;
   --accent-soft: #e8f0fb;
   --gold: #d9a441;
+  --star-mid: #bdd6f0;
+  --star-edge: #2f6fb0;
+  --star-glow: rgba(47, 111, 176, 0.5);
   --border: #e7e3da;
   --shadow: 0 8px 30px rgba(34, 48, 58, 0.08);
   --radius: 20px;
@@ -818,9 +821,35 @@ input[type='range']::-moz-range-thumb {
   --accent: #d9a441;
   --accent-soft: rgba(217, 164, 65, 0.13);
   --gold: #d9a441;
+  --star-mid: #f0d99a;
+  --star-edge: #cf9a36;
+  --star-glow: rgba(217, 164, 65, 0.6);
   --border: #1e2a44;
   --shadow: 0 10px 36px rgba(0, 0, 0, 0.5);
 }
+
+/* ---- Nelli wordmark (Playfair Display + radial star on the i) ---- */
+.nelli-wm {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  white-space: nowrap;
+}
+.nelli-i { position: relative; }
+.nelli-star {
+  position: absolute;
+  left: 50%;
+  bottom: 0.76em;
+  transform: translateX(-50%);
+  width: 0.34em;
+  height: 0.34em;
+  display: block;
+  pointer-events: none;
+  filter: drop-shadow(0 0 0.045em var(--star-glow));
+}
+.nelli-g0 { stop-color: #ffffff; }
+.nelli-g1 { stop-color: var(--star-mid); }
+.nelli-g2 { stop-color: var(--star-edge); }
 
 [data-theme='dark'] body,
 [data-theme='dark'] html {

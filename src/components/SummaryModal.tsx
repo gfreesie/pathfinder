@@ -154,6 +154,40 @@ function drawCover(
   ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
 }
 
+// A shiny four-point star (radial white→gold) — the dot of the i on the card.
+function drawSparkle(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  const k = 0.175;
+  const p: Array<[number, number]> = [
+    [0, -r], [k * r, -k * r], [r, 0], [k * r, k * r],
+    [0, r], [-k * r, k * r], [-r, 0], [-k * r, -k * r],
+  ];
+  ctx.save();
+  ctx.beginPath();
+  p.forEach(([dx, dy], i) => (i ? ctx.lineTo(cx + dx, cy + dy) : ctx.moveTo(cx + dx, cy + dy)));
+  ctx.closePath();
+  const g = ctx.createRadialGradient(cx - r * 0.25, cy - r * 0.3, r * 0.1, cx, cy, r);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.5, '#f1dca0');
+  g.addColorStop(1, '#d9a441');
+  ctx.fillStyle = g;
+  ctx.shadowColor = 'rgba(217,164,65,0.55)';
+  ctx.shadowBlur = r * 0.8;
+  ctx.fill();
+  ctx.restore();
+}
+
+// The "Nelli" logotype in Playfair, centered at cx, with the star dotting the i.
+// Uses the caller's current fillStyle for the lettering; restores textAlign=center.
+function drawWordmark(ctx: CanvasRenderingContext2D, cx: number, baselineY: number, size: number) {
+  ctx.font = `700 ${size}px "Playfair Display", Georgia, serif`;
+  ctx.textAlign = 'left';
+  const x0 = cx - ctx.measureText('Nelli').width / 2;
+  ctx.fillText('Nelli', x0, baselineY);
+  const sx = x0 + ctx.measureText('Nell').width + ctx.measureText('i').width / 2;
+  drawSparkle(ctx, sx, baselineY - size * 0.66, size * 0.16);
+  ctx.textAlign = 'center';
+}
+
 function draw(
   cv: HTMLCanvasElement,
   theme: CardTheme,
@@ -218,9 +252,7 @@ function draw(
     ctx.stroke();
   }
   ctx.fillStyle = P.headerText;
-  ctx.font = '800 52px Segoe UI, system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Nelli', W / 2, 82);
+  drawWordmark(ctx, W / 2, 82, 52);
   ctx.font = '500 24px Segoe UI, system-ui, sans-serif';
   ctx.fillStyle = P.headerSub;
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -436,10 +468,24 @@ export default function SummaryModal(props: Props) {
     img.src = '/celestial-horse.jpg';
   }, []);
 
+  // Wait for Playfair Display so the canvas wordmark renders in the brand font,
+  // not a serif fallback, then redraw.
+  const [fontReady, setFontReady] = useState(false);
+  useEffect(() => {
+    let ok = true;
+    const done = () => { if (ok) setFontReady(true); };
+    if (document.fonts?.load) {
+      document.fonts.load('700 1em "Playfair Display"').then(done, done);
+    } else {
+      Promise.resolve().then(done);
+    }
+    return () => { ok = false; };
+  }, []);
+
   useEffect(() => {
     if (ref.current) draw(ref.current, cardTheme, props, clientName, horseRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.allocation, props.monthly, props.premium, props.holdings, cardTheme, clientName, cardH, horseReady]);
+  }, [props.allocation, props.monthly, props.premium, props.holdings, cardTheme, clientName, cardH, horseReady, fontReady]);
 
   const fileSlug = () =>
     clientName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') ||

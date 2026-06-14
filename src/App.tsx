@@ -12,6 +12,7 @@ import ResultsScreen from './components/ResultsScreen';
 import ProjectionScreen from './components/ProjectionScreen';
 import ProgressPath from './components/ProgressPath';
 import StarfieldBackground from './components/StarfieldBackground';
+import Wordmark, { NelliStarDefs } from './components/Wordmark';
 import { clearHoldings, type CustomHolding } from './logic/customPortfolio';
 
 type Phase = 'intro' | 'quiz' | 'results' | 'projection';
@@ -212,11 +213,12 @@ export default function App() {
 
   return (
     <div className="app">
+      <NelliStarDefs />
       {theme === 'dark' && <StarfieldBackground />}
       <header className="app-header">
         <span className="brand">
           <img className="brand-mark" src="/celestial-horse.jpg" alt="" aria-hidden="true" />
-          Nelli <em>· Financial Vision Casting</em>
+          <Wordmark className="brand-wm" /> <em>· Financial Vision Casting</em>
         </span>
         {phase === 'quiz' && <ProgressPath current={qIndex} total={questions.length} />}
         <div className="header-actions">

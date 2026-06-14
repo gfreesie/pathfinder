@@ -447,6 +447,7 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
                     className={`cpb-tab ${tab === t ? 'active' : ''}`}
                     onClick={() => {
                       setTab(t);
+                      setQuery('');
                       setActiveIndex(0);
                     }}
                   >

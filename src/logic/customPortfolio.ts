@@ -32,7 +32,7 @@ export function whereToBuy(category: AssetCategory, assetClass: AssetKey): strin
     case 'bonds':
       return 'Treasuries at TreasuryDirect.gov; brokered CDs and bond funds (BND) via your brokerage.';
     case 'landReit':
-      return 'REIT ETFs (VNQ) via brokerage; direct land via a local realtor or auction.';
+      return 'REIT ETFs (VNQ) via brokerage; RealtyMogul for private/crowdfunded REITs; direct land via a local realtor or auction.';
     case 'cash':
       return 'High-yield savings (FDIC-insured) or a money-market fund.';
     case 'crypto':

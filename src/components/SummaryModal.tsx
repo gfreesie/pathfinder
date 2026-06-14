@@ -184,7 +184,7 @@ function drawWordmark(ctx: CanvasRenderingContext2D, cx: number, baselineY: numb
   const x0 = cx - ctx.measureText('Nelli').width / 2;
   ctx.fillText('Nelli', x0, baselineY);
   const sx = x0 + ctx.measureText('Nell').width + ctx.measureText('i').width / 2;
-  drawSparkle(ctx, sx, baselineY - size * 0.66, size * 0.16);
+  drawSparkle(ctx, sx, baselineY - size * 0.72, size * 0.18);
   ctx.textAlign = 'center';
 }
 

@@ -423,10 +423,12 @@
 .cpb-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
 
 @media (max-width: 820px) {
-  /* Stack into one scrolling column. The old fixed-height picker overflowed its
-     box (esp. with the API-key prompt showing) and landed on top of the holdings
-     panel + dice button. Letting the whole body scroll keeps them separated. */
-  .cpb-body { grid-template-columns: 1fr; overflow-y: auto; }
+  /* Stack into one scrolling column. Must drop OUT of grid: a 1-col grid still
+     sizes both rows to fit the body's height (both items have min-height:0), so it
+     compressed the picker and let its stock list + API-key box spill onto the
+     holdings panel + dice button. Plain block stacking lets each section take its
+     full height and the body scroll, keeping them separated. */
+  .cpb-body { display: block; overflow-y: auto; }
   .cpb-picker { border-right: none; border-bottom: 1px solid var(--border); }
   .cpb-results { flex: none; max-height: 240px; min-height: 0; }
   .cpb-list { flex: none; min-height: 0; }

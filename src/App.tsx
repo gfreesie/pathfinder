@@ -19,6 +19,10 @@ type Phase = 'intro' | 'quiz' | 'results' | 'projection';
 const STATE_KEY = 'nelli-progress-v1';
 const IDLE_LIMIT_MS = 20 * 60 * 1000; // reset a client session after 20 min idle
 const WARN_SECONDS = 60;              // grace period (seconds) once the "still there?" warning shows
+// Idle auto-reset is for shared/kiosk screens only — opt in with ?kiosk. On the
+// public site each visitor is on their own device, so we never interrupt them
+// and their session persists.
+const KIOSK = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('kiosk');
 
 interface SavedState {
   phase: Phase;
@@ -38,7 +42,7 @@ function loadState(): SavedState | null {
     if (!s || typeof s !== 'object' || !s.answers) return null;
     // Drop a session that has sat idle past the reset window (tab left open or
     // reopened much later) so the next person starts fresh.
-    if (typeof s.savedAt === 'number' && Date.now() - s.savedAt > IDLE_LIMIT_MS) {
+    if (KIOSK && typeof s.savedAt === 'number' && Date.now() - s.savedAt > IDLE_LIMIT_MS) {
       localStorage.removeItem(STATE_KEY);
       return null;
     }
@@ -154,6 +158,7 @@ export default function App() {
   // Track interaction; once IDLE_LIMIT_MS passes with none, raise the warning.
   // Any interaction (incl. moving the mouse) dismisses a showing warning.
   useEffect(() => {
+    if (!KIOSK) return; // auto-reset only in kiosk mode (?kiosk); public sessions persist
     lastActivityRef.current = Date.now(); // seed on mount; refresh on phase change
     const bump = () => {
       lastActivityRef.current = Date.now();

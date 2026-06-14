@@ -29,6 +29,7 @@ npm run preview
 
 ## Conventions / gotchas
 - All `localStorage` keys are `nelli-*`. Never hardcode the FMP key in source (repo is public).
+- **Idle auto-reset is kiosk-only.** The 20-min "still there?" warning + wipe arms only with `?kiosk` in the URL (`KIOSK` in `App.tsx`); public sessions persist and are never interrupted. `startOver()` clears `nelli-progress-v1` AND `nelli-custom-portfolio`.
 - Brand strings live in: `App.tsx`, `IntroScreen.tsx`, `index.html`, `SummaryModal.tsx`, `exportSummary.ts`, `package.json`.
 - Summary card is a fixed-width (900px) canvas with **dynamic height** — update `draw()` AND `computeHeight()` together when changing card content.
 - Accent: light = celestial blue `#2f6fb0`; dark = gold `#d9a441`. Archetype/donut colors are categorical (leave them).

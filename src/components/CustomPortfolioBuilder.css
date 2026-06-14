@@ -236,6 +236,38 @@
 }
 .cpb-modeToggle button.active { background: var(--accent); color: #fff; }
 
+/* "How G would roll the dice" CTA */
+.cpb-groll {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #e2b24f, #c08a2e);
+  color: #1a1208;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(217, 164, 65, 0.32);
+  transition: transform 0.12s, box-shadow 0.2s, filter 0.2s;
+}
+.cpb-groll:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 7px 22px rgba(217, 164, 65, 0.45); filter: brightness(1.04); }
+.cpb-groll:active:not(:disabled) { transform: translateY(0); }
+.cpb-groll:disabled { cursor: default; }
+.cpb-groll-dice { font-size: 18px; line-height: 1; display: inline-block; }
+.cpb-groll.rolling .cpb-groll-dice { animation: cpb-dice-spin 0.5s linear infinite; }
+@keyframes cpb-dice-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .cpb-groll.rolling .cpb-groll-dice { animation: none; }
+  .cpb-groll:hover:not(:disabled) { transform: none; }
+}
+
 .cpb-list { overflow-y: auto; flex: 1; min-height: 140px; display: flex; flex-direction: column; gap: 6px; }
 .cpb-row {
   display: grid;

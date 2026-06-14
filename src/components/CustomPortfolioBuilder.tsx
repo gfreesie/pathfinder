@@ -36,6 +36,7 @@ import {
   seedFromAllocation,
   unitsFor,
 } from '../logic/customPortfolio';
+import { G_BASIS, G_HOLDINGS, type GHolding } from '../data/gRoll';
 import './CustomPortfolioBuilder.css';
 
 interface Props {
@@ -86,6 +87,10 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
   const [activeIndex, setActiveIndex] = useState(0);
   const resultsRef = useRef<HTMLDivElement>(null);
   const priceReqRef = useRef<Set<string>>(new Set()); // symbols already price-fetched this session
+
+  // "How G would roll the dice" — fills the builder with G's signature lineup.
+  const [rolling, setRolling] = useState(false);
+  const rollTimerRef = useRef<number | null>(null);
 
   // api key
   const [apiKey, setApiKeyState] = useState(getStockApiKey());
@@ -184,6 +189,62 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
 
   const setDollars = (id: string, dollars: number) =>
     setHoldings((hs) => hs.map((h) => (h.id === id ? { ...h, dollars: Math.max(0, Math.round(dollars)) } : h)));
+
+  // ---- "How G would roll the dice" ------------------------------------------
+
+  const priceForG = (h: GHolding): number | null => {
+    if (h.category === 'stock') return stocks[h.symbol]?.price ?? null;
+    if (h.category === 'crypto') return crypto.find((c) => c.symbol === h.symbol)?.price ?? null;
+    if (h.category === 'metal') return metals.find((m) => m.symbol === h.symbol)?.price ?? null;
+    return null;
+  };
+
+  // G's lineup scaled to the visitor's capital (exact at the default $30k).
+  const buildGRoll = (): CustomHolding[] => {
+    const scale = capital > 0 ? capital / G_BASIS : 1;
+    return G_HOLDINGS.map((h) => ({
+      id: newHoldingId(),
+      symbol: h.symbol,
+      name: h.name,
+      category: h.category,
+      assetClass: h.assetClass,
+      price: priceForG(h),
+      dollars: Math.max(0, Math.round(h.dollars * scale)),
+    }));
+  };
+
+  const rollGsDice = () => {
+    if (rolling) return;
+    const final = buildGRoll();
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setHoldings(final); // reduced-motion: skip the scramble, just fill it in
+      return;
+    }
+    setRolling(true);
+    const ids = final.map((h) => h.id);
+    let frame = 0;
+    const FRAMES = 11;
+    const iv = window.setInterval(() => {
+      frame += 1;
+      if (frame >= FRAMES) {
+        window.clearInterval(iv);
+        rollTimerRef.current = null;
+        setHoldings(final); // land on G's exact lineup
+        setRolling(false);
+        return;
+      }
+      // scramble: shuffle order + jitter amounts for the "rolling dice" effect
+      const scrambled = final
+        .map((h, i) => ({ ...h, id: ids[i], dollars: Math.max(0, Math.round(h.dollars * (0.4 + Math.random() * 1.3))) }))
+        .sort(() => Math.random() - 0.5);
+      setHoldings(scrambled);
+    }, 75);
+    rollTimerRef.current = iv;
+  };
+
+  useEffect(() => () => {
+    if (rollTimerRef.current) window.clearInterval(rollTimerRef.current);
+  }, []);
 
   // ---- asset picker results -------------------------------------------------
 
@@ -600,6 +661,16 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
                 <button className={mode === 'dollar' ? 'active' : ''} onClick={() => setMode('dollar')}>$</button>
               </div>
             </div>
+
+            <button
+              className={`cpb-groll ${rolling ? 'rolling' : ''}`}
+              onClick={rollGsDice}
+              disabled={rolling}
+              title="Fill the builder with G's signature lineup"
+            >
+              <span className="cpb-groll-dice" aria-hidden="true">🎲</span>
+              {rolling ? 'Rolling…' : 'How G would roll the dice'}
+            </button>
 
             <div className="cpb-list">
               {holdings.length === 0 && (

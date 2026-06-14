@@ -12,11 +12,13 @@ import ResultsScreen from './components/ResultsScreen';
 import ProjectionScreen from './components/ProjectionScreen';
 import ProgressPath from './components/ProgressPath';
 import StarfieldBackground from './components/StarfieldBackground';
-import type { CustomHolding } from './logic/customPortfolio';
+import { clearHoldings, type CustomHolding } from './logic/customPortfolio';
 
 type Phase = 'intro' | 'quiz' | 'results' | 'projection';
 
 const STATE_KEY = 'nelli-progress-v1';
+const IDLE_LIMIT_MS = 20 * 60 * 1000; // reset a client session after 20 min idle
+const WARN_SECONDS = 60;              // grace period (seconds) once the "still there?" warning shows
 
 interface SavedState {
   phase: Phase;
@@ -25,6 +27,7 @@ interface SavedState {
   blendIdx: number | null;
   customAllocation: AllocationLine[] | null;
   customHoldings?: CustomHolding[] | null;
+  savedAt?: number;     // ms timestamp of last change — used to drop a stale session on load
 }
 
 function loadState(): SavedState | null {
@@ -33,6 +36,12 @@ function loadState(): SavedState | null {
     if (!raw) return null;
     const s = JSON.parse(raw) as SavedState;
     if (!s || typeof s !== 'object' || !s.answers) return null;
+    // Drop a session that has sat idle past the reset window (tab left open or
+    // reopened much later) so the next person starts fresh.
+    if (typeof s.savedAt === 'number' && Date.now() - s.savedAt > IDLE_LIMIT_MS) {
+      localStorage.removeItem(STATE_KEY);
+      return null;
+    }
     return s;
   } catch {
     return null;
@@ -58,6 +67,12 @@ export default function App() {
       return 'light';
     }
   });
+
+  // Idle auto-reset: warn after IDLE_LIMIT_MS of no interaction, then reset.
+  const [idleWarn, setIdleWarn] = useState(false);
+  const [graceLeft, setGraceLeft] = useState(WARN_SECONDS);
+  const lastActivityRef = useRef(0); // ms of last interaction; seeded in the effect below
+  const idleWarnRef = useRef(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -98,7 +113,7 @@ export default function App() {
     try {
       localStorage.setItem(
         STATE_KEY,
-        JSON.stringify({ phase, qIndex, answers, blendIdx, customAllocation, customHoldings }),
+        JSON.stringify({ phase, qIndex, answers, blendIdx, customAllocation, customHoldings, savedAt: Date.now() }),
       );
     } catch {
       /* storage unavailable */
@@ -117,6 +132,7 @@ export default function App() {
   const startOver = () => {
     try {
       localStorage.removeItem(STATE_KEY);
+      clearHoldings(); // also drop the builder's saved working holdings (nelli-custom-portfolio)
     } catch {
       /* storage unavailable */
     }
@@ -126,7 +142,52 @@ export default function App() {
     setCustomHoldings(null);
     setQIndex(0);
     setPhase('intro');
+    setIdleWarn(false);
   };
+
+  // Mirror the warning flag into a ref so the (window-level) activity listener
+  // can read it without re-subscribing on every toggle.
+  useEffect(() => {
+    idleWarnRef.current = idleWarn;
+  }, [idleWarn]);
+
+  // Track interaction; once IDLE_LIMIT_MS passes with none, raise the warning.
+  // Any interaction (incl. moving the mouse) dismisses a showing warning.
+  useEffect(() => {
+    lastActivityRef.current = Date.now(); // seed on mount; refresh on phase change
+    const bump = () => {
+      lastActivityRef.current = Date.now();
+      if (idleWarnRef.current) setIdleWarn(false);
+    };
+    const events = ['mousedown', 'keydown', 'touchstart', 'scroll', 'mousemove'];
+    events.forEach((e) => window.addEventListener(e, bump, { passive: true }));
+    const watch = window.setInterval(() => {
+      if (phase !== 'intro' && Date.now() - lastActivityRef.current > IDLE_LIMIT_MS) {
+        setGraceLeft(WARN_SECONDS);
+        setIdleWarn(true);
+      }
+    }, 5000);
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, bump));
+      window.clearInterval(watch);
+    };
+  }, [phase]);
+
+  // While the warning is up, count down and reset when it runs out.
+  useEffect(() => {
+    if (!idleWarn) return;
+    const deadline = Date.now() + WARN_SECONDS * 1000;
+    const iv = window.setInterval(() => {
+      const left = Math.ceil((deadline - Date.now()) / 1000);
+      if (left <= 0) {
+        window.clearInterval(iv);
+        startOver();
+      } else {
+        setGraceLeft(left);
+      }
+    }, 250);
+    return () => window.clearInterval(iv);
+  }, [idleWarn]);
 
   const effectiveAllocation = customAllocation ?? allocation;
 
@@ -240,6 +301,32 @@ export default function App() {
       <footer className="app-footer">
         Educational tool for discussion purposes. Not licensed financial advice.
       </footer>
+
+      {idleWarn && (
+        <div className="modal-overlay" role="alertdialog" aria-label="Session about to reset">
+          <div className="modal-box session-timeout">
+            <h2>Still there?</h2>
+            <p>
+              For privacy between client sessions, this will reset to a fresh start in{' '}
+              <strong>{graceLeft}s</strong>.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="btn primary"
+                onClick={() => {
+                  lastActivityRef.current = Date.now();
+                  setIdleWarn(false);
+                }}
+              >
+                Keep going
+              </button>
+              <button className="btn ghost" onClick={startOver}>
+                Start fresh now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

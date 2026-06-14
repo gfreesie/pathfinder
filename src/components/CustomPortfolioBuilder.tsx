@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { motion } from 'framer-motion';
 import {
   Coins,
@@ -78,8 +78,14 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
   const [metals, setMetals] = useState<Quote[]>([]);
   const [stocks, setStocks] = useState<Record<string, Quote>>({});
   const [stockSearch, setStockSearch] = useState<Quote[]>([]); // live FMP search hits
+  const [searching, setSearching] = useState(false); // live ticker query in flight
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // autocomplete: keyboard-highlighted option + on-demand price fills
+  const [activeIndex, setActiveIndex] = useState(0);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const priceReqRef = useRef<Set<string>>(new Set()); // symbols already price-fetched this session
 
   // api key
   const [apiKey, setApiKeyState] = useState(getStockApiKey());
@@ -106,33 +112,34 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time data fetch on mount
     void loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Live ticker search across all listed stocks (debounced), so any symbol —
-  // not just the curated universe — is reachable. Prices are fetched for hits.
+  // not just the curated universe — is reachable. Prices are filled in on
+  // highlight (see ensurePrice) rather than bulk-fetched, to spare FMP's budget.
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- debounced external search; immediate "searching" feedback and clearing stale hits are intentional */
     if (tab !== 'stock' || !apiKey || query.trim().length < 1) {
       setStockSearch([]);
+      setSearching(false);
       return;
     }
     let cancelled = false;
+    setSearching(true);
     const t = setTimeout(async () => {
       const hits = await searchStocks(query, apiKey);
       if (cancelled) return;
       setStockSearch(hits);
-      const need = hits.map((h) => h.symbol).filter((s) => !stocks[s]);
-      if (need.length) {
-        const q = await fetchStockQuotes(need, apiKey);
-        if (!cancelled) setStocks((prev) => ({ ...prev, ...q.data }));
-      }
-    }, 350);
+      setSearching(false);
+    }, 200);
+    /* eslint-enable react-hooks/set-state-in-effect */
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, tab, apiKey]);
 
   useEffect(() => {
@@ -192,6 +199,7 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
         category: 'stock' as AssetCategory,
         assetClass: s.assetClass as AssetKey,
         image: undefined as string | undefined,
+        exchange: undefined as string | undefined,
       }));
       const seen = new Set(curated.map((r) => r.symbol));
       // Append live search hits for any listed ticker not in the curated set
@@ -204,8 +212,25 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
           category: 'stock' as AssetCategory,
           assetClass: 'usStocks' as AssetKey,
           image: undefined as string | undefined,
+          exchange: h.exchange,
         }));
-      return [...curated, ...extra].slice(0, 80);
+      const merged = [...curated, ...extra];
+      if (!q) return merged.slice(0, 80);
+      // Rank so exact-ticker / prefix matches lead regardless of source; original
+      // order (curated before live) breaks ties.
+      const rank = (sym: string, name: string) => {
+        const s = sym.toLowerCase();
+        if (s === q) return 4;
+        if (s.startsWith(q)) return 3;
+        if (name.toLowerCase().startsWith(q)) return 2;
+        if (s.includes(q)) return 1;
+        return 0;
+      };
+      return merged
+        .map((r, i) => ({ r, key: rank(r.symbol, r.name) * 1000 - i }))
+        .sort((a, b) => b.key - a.key)
+        .map((x) => x.r)
+        .slice(0, 80);
     }
     if (tab === 'crypto') {
       return crypto
@@ -218,6 +243,7 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
           category: 'crypto' as AssetCategory,
           assetClass: 'crypto' as AssetKey,
           image: c.image,
+          exchange: undefined as string | undefined,
         }));
     }
     if (tab === 'metal') {
@@ -230,6 +256,7 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
           category: 'metal' as AssetCategory,
           assetClass: 'metals' as AssetKey,
           image: undefined,
+          exchange: undefined as string | undefined,
         }));
     }
     return [];
@@ -239,6 +266,76 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
     () => new Set(holdings.map((h) => `${h.category}:${h.symbol}`)),
     [holdings],
   );
+
+  // ---- autocomplete: highlight + on-demand price fill -----------------------
+
+  // Fetch one symbol's live price (when an option is highlighted/hovered/added)
+  // and patch it into the price map and any holding still awaiting a price.
+  const ensurePrice = (symbol: string) => {
+    if (!apiKey || !symbol) return;
+    const have = stocks[symbol]?.price;
+    if ((have != null && have > 0) || priceReqRef.current.has(symbol)) return;
+    priceReqRef.current.add(symbol);
+    void fetchStockQuotes([symbol], apiKey).then((res) => {
+      const quote = res.data[symbol];
+      if (!quote) return;
+      setStocks((prev) => ({ ...prev, ...res.data }));
+      setHoldings((hs) =>
+        hs.map((h) =>
+          h.category === 'stock' && h.symbol === symbol && h.price == null
+            ? { ...h, price: quote.price }
+            : h,
+        ),
+      );
+    });
+  };
+
+  const addAsset = (r: {
+    symbol: string;
+    name: string;
+    category: AssetCategory;
+    assetClass: AssetKey;
+    price: number | null;
+  }) => {
+    addHolding({
+      symbol: r.symbol,
+      name: r.name,
+      category: r.category,
+      assetClass: r.assetClass,
+      price: r.price,
+    });
+    if (r.category === 'stock' && r.price == null) ensurePrice(r.symbol);
+  };
+
+  // Keep the highlighted option in view and price-fill it on the fly.
+  useEffect(() => {
+    if (!results.length) return;
+    const idx = Math.min(activeIndex, results.length - 1);
+    const item = results[idx];
+    if (item && item.category === 'stock' && item.price == null) ensurePrice(item.symbol);
+    resultsRef.current
+      ?.querySelector<HTMLElement>(`[data-idx="${idx}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, results]);
+
+  const onSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (!results.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(results.length - 1, i + 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(0, i - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const r = results[Math.min(activeIndex, results.length - 1)];
+      if (r && !addedSymbols.has(`${r.category}:${r.symbol}`)) addAsset(r);
+    } else if (e.key === 'Escape') {
+      setQuery('');
+      setActiveIndex(0);
+    }
+  };
 
   // ---- custom asset form ----------------------------------------------------
 
@@ -348,7 +445,10 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
                   <button
                     key={t}
                     className={`cpb-tab ${tab === t ? 'active' : ''}`}
-                    onClick={() => setTab(t)}
+                    onClick={() => {
+                      setTab(t);
+                      setActiveIndex(0);
+                    }}
                   >
                     <Icon size={15} /> {TAB_META[t].label}
                   </button>
@@ -361,32 +461,45 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
                 <div className="cpb-search">
                   <Search size={15} />
                   <input
+                    role="combobox"
+                    aria-expanded={results.length > 0}
+                    aria-controls="cpb-results-list"
+                    aria-activedescendant={
+                      results[activeIndex] ? `cpb-opt-${activeIndex}` : undefined
+                    }
+                    aria-autocomplete="list"
                     placeholder={`Search ${TAB_META[tab].label.toLowerCase()}…`}
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      setActiveIndex(0);
+                    }}
+                    onKeyDown={onSearchKeyDown}
                   />
                 </div>
-                <div className="cpb-results">
+                <div className="cpb-results" id="cpb-results-list" role="listbox" ref={resultsRef}>
                   {results.length === 0 && (
                     <p className="cpb-empty">
-                      {loading ? 'Loading live prices…' : 'No matches — try another search.'}
+                      {searching
+                        ? 'Searching all listed tickers…'
+                        : loading
+                          ? 'Loading live prices…'
+                          : 'No matches — try another search.'}
                     </p>
                   )}
-                  {results.map((r) => {
+                  {results.map((r, i) => {
                     const added = addedSymbols.has(`${r.category}:${r.symbol}`);
+                    const active = i === activeIndex;
                     return (
                       <button
-                        key={r.symbol}
-                        className={`cpb-asset ${added ? 'added' : ''}`}
-                        onClick={() =>
-                          addHolding({
-                            symbol: r.symbol,
-                            name: r.name,
-                            category: r.category,
-                            assetClass: r.assetClass,
-                            price: r.price,
-                          })
-                        }
+                        key={`${r.category}:${r.symbol}`}
+                        id={`cpb-opt-${i}`}
+                        role="option"
+                        aria-selected={active}
+                        data-idx={i}
+                        className={`cpb-asset${added ? ' added' : ''}${active ? ' active' : ''}`}
+                        onMouseEnter={() => setActiveIndex(i)}
+                        onClick={() => addAsset(r)}
                         disabled={added}
                       >
                         {r.image ? (
@@ -395,7 +508,10 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
                           <span className="cpb-ticker">{r.symbol.slice(0, 4)}</span>
                         )}
                         <span className="cpb-asset-name">
-                          <strong>{r.symbol}</strong>
+                          <strong>
+                            {r.symbol}
+                            {r.exchange && <span className="cpb-exchange">{r.exchange}</span>}
+                          </strong>
                           <em>{r.name}</em>
                         </span>
                         <span className="cpb-asset-price">
@@ -405,6 +521,9 @@ export default function CustomPortfolioBuilder({ capital, suggested, onApply, on
                       </button>
                     );
                   })}
+                  {searching && results.length > 0 && (
+                    <p className="cpb-searching">Searching all listed tickers…</p>
+                  )}
                 </div>
                 {tab === 'stock' && !apiKey && (
                   <div className="cpb-keybox">

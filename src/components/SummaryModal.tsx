@@ -318,10 +318,11 @@ function draw(
     ctx.lineWidth = 1;
     ctx.stroke();
   }
-  ctx.font = '600 25px Segoe UI, system-ui, sans-serif';
+  ctx.font = '600 22px Segoe UI, system-ui, sans-serif';
   boxLines.forEach(([color, text], i) => {
     ctx.fillStyle = color;
-    ctx.fillText(text, 95, y + 12 + i * 40);
+    // Clamp to the box's inner width so a long SBLOC/insurance line can't run off the card.
+    ctx.fillText(text, 95, y + 12 + i * 40, W - 190);
   });
   y += boxH + 30;
 

@@ -13,9 +13,9 @@ It is an **educational / discussion tool**, not licensed advice. Every number is
 ## The vibe
 
 - **Celestial, aspirational, premium.** The identity is a nebula shaped like a rearing horse ("casting" a vision in the stars).
-- **Two faces, one brand.** Light mode is clean, calm, and trustworthy (teal/gold on warm off-white). **Celestial dark** is where it comes alive: an animated starfield drifts behind the whole app, the logo glows, and the nebula fills the summary card header.
+- **Two faces, one brand.** Light mode is clean, calm, and trustworthy (celestial-blue/gold on warm off-white). **Celestial dark** is where it comes alive: an animated starfield drifts behind the whole app, the logo glows, and the nebula fills the summary card header.
 - **Calm confidence, no jargon.** Copy is plain-language and reassuring ("No jargon, no judgment").
-- **Color system:** teal `#2F8F7B` (accent / light), gold `#D9A441` (accent / dark + highlights), deep navy `#070b16` (dark background), warm off-white `#faf8f4` (light background).
+- **Color system:** celestial blue `#2f6fb0` (accent / light), gold `#D9A441` (accent / dark + highlights), deep navy `#070b16` (dark background), warm off-white `#faf8f4` (light background). _(Archetype + donut slice colors are categorical and intentionally separate — e.g. the US-stocks slice stays teal `#2F8F7B`.)_
 
 ## Tech stack
 
